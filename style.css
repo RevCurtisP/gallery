@@ -1,0 +1,13 @@
+body {text-align: center; background: light-grey; color: black;}
+a {text-decoration: none; color: black;}
+
+#back {font-size: .7em;}
+#title {font-size: 48pt; margin: 0px;}
+#logo {max-width: 100%;}
+#description {margin: 0px;}
+#contents {padding: 24px;}
+.image {max-width: 90%;}
+.item {display: inline-block;}
+.item_thumb {max-width: 100%;}
+.item_title {}
+
