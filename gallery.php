@@ -1,64 +1,29 @@
 <?php
 
-/* A collection may contain both sub-collections and items. */
-class Collection
+/* Base class for Gallery Objects */
+abstract class Item
 {
-
-  public function __construct($title='Unnamed Collection')
+  public function __construct($title)
   {
+    $this->url = null;
     $this->filename = null;
     $this->title = $title;
     $this->logo = null;
     $this->description = null;
     $this->details = null;
-    $this->contents = array();
+  }  
+
+  public function load_ini_file()
+  {
+    $ini = parse_ini_file($this->ini_file);      
+    $this->load_array($ini);
   }
 
-  /* Create Collection object from array */
-  public function from_array($props)
-  {
-    $collection = new Collection();
-    $collection->load_array($props);
-    return $collection;
-  }
-    
-  /* Create Collection object from Config and CSV files */
-  public function from_files($filebase)
-  {
-    $collection = new Collection();
-    $collection->load_cfg_file($filebase . '.cfg');
-    $collection->load_csv_file($filebase . '.csv');
-    return $collection;
-  }
-  
-  public function load_cfg_file($cfg_file)
-  {
-    $cfg = parse_ini_file($cfg_file);      
-    $this->load_array($cfg);
-  }
-  
-  public function load_csv_file($csv_file)
-  {
-    if ($fp = fopen($csv_file, 'r')):
-      $headers = fgetcsv($fp);
-      $fields = sizeof($headers);
-      while ($line = fgetcsv($fp)):
-        $row = array();
-        for ($i=0; $i<$fields; $i++):
-          $row[$headers[$i]] = $line[$i];
-        endfor;
-        $this->contents[] = Collection::from_array($row);
-      endwhile;
-      fclose($fp);
-    endif;
-  }
-  
   /* Load object properties from array */
   public function load_array($props)
   {
-    $collection = new Collection();
-    if (array_key_exists('FILENAME', $props))
-      $this->filename = $props['FILENAME'];
+    if (array_key_exists('FILE', $props))
+      $this->file = $props['FILE'];
     if (array_key_exists('TITLE', $props))
       $this->title = $props['TITLE'];
     if (array_key_exists('LOGO', $props))
@@ -68,25 +33,115 @@ class Collection
     if (array_key_exists('DETAILS', $props))
       $this->details = $props['DETAILS'];           
   }
-
+    
   /* Build and return thumbnail filename */
-  public function thumbnail()
+  public function thumbnail($default=null)
   {
-    $filebase = $this->filename;
+    $filebase = $this->filebase();
     if ($filebase):
-      $filename = $filebase . '/' . $filebase . '_thumb.jpg';
+      $thumbfile = $filebase . '_thumb.jpg';
     else:
-      $filename = null;
+      $thumbfile = null;
     endif;
-    if ($filename and file_exists($filename)):
-      $thumbnail = $filename;
+    echo "<!-- Thumbfile: $thumbfile -->";
+    if ($thumbfile and file_exists($thumbfile)):
+      $thumbnail = $thumbfile;
     else:
-      $thumbnail = null;
+      $thumbnail = $default;
     endif;
     return $thumbnail;
   }
 
+  /* Strip Extension from filename */
+  private function filebase()
+  {
+      $filename = $this->filename;
+      $lastdot = strrpos($filename, '.');
+      if ($lastdot > 0):
+        return substr($filename, 0, $lastdot);
+      else:
+        return $filename;
+      endif;
+  }
 }
 
+class Collection extends Item
+{
+
+  public function __construct($title='Unnamed Collection')
+  {
+    parent::__construct($title);
+    $this->contents = array();
+  }
+
+  /* Create Collection object from Config and CSV files */
+  public static function from_file($filename, $load_lst_file=true)
+  {
+    $collection = new Collection();
+    $collection->set_files($filename);
+    $collection->load_ini_file();
+    if ($load_lst_file) $collection->load_lst_file();
+    return $collection;
+  }
+
+  public function set_files($filename)
+  {
+    $this->url = pathinfo("$filename", PATHINFO_DIRNAME) . '/';
+    $this->filename = $filename;
+    $this->title = pathinfo($filename, PATHINFO_FILENAME);
+    $this->description = $this->title . ' collection';
+    $this->ini_file = $filename . '.ini';
+    $this->lst_file = $filename . '.lst';
+  }
+  
+  public function load_lst_file()
+  {
+      $lst = file($this->lst_file);
+      if ($lst):
+        foreach ($lst as $line):
+          $line = trim($line);
+          if ($line):
+            $file = rtrim($line, '/');
+            if ($file == $line):
+              $path = $this->url . $file;
+              $this->contents[] = Image::from_file($path);
+            else:
+              $path = $this->url . $line . $file;
+              $this->contents[] = Collection::from_file($path, false);
+            endif;
+          endif;
+        endforeach;
+      endif;
+  }
+  
+} //class Collection
+
+class Image extends Item
+{
+  public function __construct($title='Unnamed Image')
+  {
+    parent::__construct($title);
+    $this->file = null;
+  }
+
+  /* Create Collection object from Config and CSV files */
+  public static function from_file($filename)
+  {
+    $image = new Image();
+    $image->set_files($filename);
+    $image->load_ini_file();
+    return $image;
+  }  
+
+  public function set_files($filename)
+  {
+    $this->url = $filename;
+    $this->filename = $filename;
+    $this->title = pathinfo($filename, PATHINFO_FILENAME);
+    $this->description = $this->title;
+    $this->ini_file = $filename . '.ini';
+  }
+
+}
 
 ?>
