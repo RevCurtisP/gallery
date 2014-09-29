@@ -22,7 +22,6 @@ $title = htmlspecialchars($item->title);
 $logo = $item->logo;
 $description = htmlspecialchars($item->description);
 $details = htmlspecialchars($item->details);
-
 ?>
 <!DOCTYPE html> 
 <html lang="en"> 
@@ -52,21 +51,22 @@ $details = htmlspecialchars($item->details);
     <div id="main">
 <?if ($collection):?>
       <div id="contents">
-<? if ($contents=$collection->contents):
-    foreach ($contents as $item):
-      $item_url = $item->url;
-      $item_title = htmlspecialchars($item->title);
-      $item_description = htmlspecialchars($item->description);
-      $item_thumbnail = $item->thumbnail('not_available_thumb.jpg');?>
+<?  $contents=$collection->contents;
+    if (is_array($contents)):
+      foreach ($contents as $item):
+        $item_url = $item->url;
+        $item_title = htmlspecialchars($item->title);
+        $item_description = htmlspecialchars($item->description);
+        $item_thumbnail = $item->thumbnail('not_available_thumb.jpg');?>
         <a href="/<?=$item_url;?>" class="item">
           <img class="item_thumb" src="/<?=$item_thumbnail;?>" alt="" title="<?=$item_description;?>">
           <h3 class="item_title"><?=$item_title;?></h3>
           <!-- <?=get_class($item);?> -->
         </a>
-<?  endforeach;
-   else:?>
+<?    endforeach;
+     else:?>
         <h3>Collection is Empty</h3>
-<? endif;?>  
+<?   endif;?>  
       </div>
 <?else:?>
       <div id="item">
